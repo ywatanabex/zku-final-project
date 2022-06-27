@@ -91,7 +91,7 @@ export default function Result({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await result(values.size, values.group, values.indexNumber, values.secretSalt); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await result(parseInt(values.size), values.group, values.indexNumber, values.secretSalt); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>
@@ -142,7 +142,7 @@ export default function Result({ contractInfoList }) {
                       <label className="label" htmlFor="secretSalt"> Your Secret Salt Number </label>
                       <Field
                           name="secretSalt"
-                          type="number"
+                          type="text"
                           className="input"
                           placeholder="e.g. 12774367769825274767468634682317838448486152426"
                       />

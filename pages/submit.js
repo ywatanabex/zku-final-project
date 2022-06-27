@@ -67,7 +67,7 @@ export default function Submit({ contractInfoList }) {
     // Compute hash   
     const poseidon = await buildPoseidon(); 
     const F = poseidon.F;
-    const sHash = F.toObject(poseidon([secretSalt, ...score]));
+    const sHash = F.toObject(poseidon([secretSalt, ...score]));  // secretSalt is string, but it works 
     //setLogs(`sHash = ${sHash}`)
 
     // Call contract method
@@ -108,7 +108,7 @@ export default function Submit({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await submit(values.size, values.group, values.indexNumber, values.secretSalt, values.rankingNumberString); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await submit(parseInt(values.size), values.group, values.indexNumber, values.secretSalt, values.rankingNumberString); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>
@@ -159,7 +159,7 @@ export default function Submit({ contractInfoList }) {
                       <label className="label" htmlFor="secretSalt"> Your Secret Salt Number </label>
                       <Field
                           name="secretSalt"
-                          type="number"
+                          type="text"
                           className="input"
                           placeholder="e.g. 12774367769825274767468634682317838448486152426"
                       />

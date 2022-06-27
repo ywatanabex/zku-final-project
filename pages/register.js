@@ -152,7 +152,7 @@ export default function Register({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await register(values.size, values.secretSaltListString); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await register(parseInt(values.size), values.secretSaltListString); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>

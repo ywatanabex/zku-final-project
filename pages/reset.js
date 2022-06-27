@@ -77,7 +77,7 @@ export default function Reset({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await reset(values.size); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await reset(parseInt(values.size)); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>
