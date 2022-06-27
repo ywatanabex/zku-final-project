@@ -1,0 +1,10 @@
+[
+    {"group": "Man", "index": 0, "secretSalt": 123456, "ranking": [0, 2, 1, 3]},
+    {"group": "Man", "index": 1, "secretSalt": 234567, "ranking": [1, 2, 3, 0]}, 
+    {"group": "Man", "index": 2, "secretSalt": 345678, "ranking": [2, 3, 1, 0]},
+    {"group": "Man", "index": 3, "secretSalt": 456789, "ranking": [3, 2, 1, 0]},
+    {"group": "Woman", "index": 0, "secretSalt": 654321, "ranking": [3, 0, 1, 2]},
+    {"group": "Woman", "index": 1, "secretSalt": 765432, "ranking": [1, 0, 2, 3]},
+    {"group": "Woman", "index": 2, "secretSalt": 876543, "ranking": [2, 1, 3, 0]},
+    {"group": "Woman", "index": 3, "secretSalt": 987654, "ranking": [2, 1, 0, 3]}
+]

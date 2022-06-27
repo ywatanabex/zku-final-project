@@ -1,0 +1,31 @@
+{
+  "name": "zku-final-project-dev",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "chai": "^4.3.6",
+    "chai-arrays": "^2.2.0",
+    "circom": "^0.5.46",
+    "circom_runtime": "^0.1.17",
+    "circomlib": "^2.0.3",
+    "circomlibjs": "^0.1.2",
+    "ethereum-waffle": "^3.4.4",
+    "ethers": "^5.6.4",
+    "hardhat": "^2.9.3"
+  },
+  "scripts": {
+    "compile": "yarn run compile:circuit && yarn run compile:contract",
+    "compile:circuit": "bash scripts/compile-circuits.sh && bash scripts/copy-circuits-data.sh && node scripts/bump-solidity.js",
+    "compile:contract": "npx hardhat compile",
+    "test": "npx hardhat test"
+  },
+  "dependencies": {
+    "snarkjs": "^0.4.16",
+    "@metamask/detect-provider": "^1.2.0",
+    "formik": "^2.2.9",
+    "next": "^12.1.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "yup": "^0.32.11"
+  }
+}
