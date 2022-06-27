@@ -107,3 +107,5 @@ Using this UI, the following procedure is used to calculate the matching.
 3. Each participant checks their result on `result` page.
 
 The state variables of the contract can be reset for the next matching round using `reset` page.
+
+Currently, the UI is hosted on vercel: https://zku-final-project-8k9hb1l3b-ywatanabex.vercel.app/submit 
