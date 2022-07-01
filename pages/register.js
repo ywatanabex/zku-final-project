@@ -29,13 +29,15 @@ export default function Register({ contractInfoList }) {
   });
 
   const initialValues = {
+    address: '',
     size: '',
     secretSaltListString: '',
   };
-//   const initialValues = {
-//     size: 3,
-//     secretSaltListString: `123456\n234567\n345678\n654321\n765432\n876543`,
-//   };  
+  //  const initialValues = {
+  //    address: '0x9f99af641CE232B53C51014D04006182bf9005ac',
+  //    size: 3,
+  //    secretSaltListString: `123456\n234567\n345678\n654321\n765432\n876543`,
+  //  };  
 
   const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
@@ -68,7 +70,7 @@ export default function Register({ contractInfoList }) {
     return []
   }  
 
-  async function register(N, secretSaltListString) {
+  async function register(address, N, secretSaltListString) {
     // parse secretSaltListString
     const secretSaltList = secretSaltListString.trim().split('\n');
     if (secretSaltList.length !== 2 * N) {
@@ -76,7 +78,8 @@ export default function Register({ contractInfoList }) {
         return;
     }
     const contractInfo = contractInfoList.filter(i => i['name'] = `Matching${N}`)[0]
-    const contractAddress = contractInfo['address']
+    //const contractAddress = contractInfo['address']
+    const contractAddress = address;
     const contractArtifact = contractInfo['artifact']
     const poseidon = await buildPoseidon(); 
 
@@ -86,35 +89,39 @@ export default function Register({ contractInfoList }) {
     const ethersProvider = new providers.Web3Provider(provider)
     const signer = ethersProvider.getSigner()
     const message = await signer.signMessage("Sign this message to commit the hash of your preference ranking.")    
+    
+    // const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
+    // const signer = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", provider);    
+    
     const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
     
     const scoreList = []
     for (let i = 0; i < 2 * N; i ++ ) {
-        const sHash = await contract.scoreHash(i);
-        const s = decodeScoreHash(poseidon, secretSaltList[i], sHash, N)
-        scoreList.push(s)
+      const sHash = await contract.scoreHash(i);
+      const s = decodeScoreHash(poseidon, secretSaltList[i], sHash, N)
+      scoreList.push(s)
     } 
-
+    
     const rankingList = scoreList.map(scoreToRanking)
     const rankingListM = rankingList.slice(0, N)
     const rankingListF = rankingList.slice(N, 2*N)
     const matching = computeStableMatching(rankingListM, rankingListF)
     const matchingArray = matchingToArray(matching)
     const Input = {
-        "matching": matchingArray,
-        "privateKeyM": secretSaltList.slice(0, N),
-        "privateKeyF": secretSaltList.slice(N, 2*N),
-        "scoreMF": scoreList.slice(0, N),
-        "scoreFM": scoreList.slice(N, 2*N),
+      "matching": matchingArray,
+      "privateKeyM": secretSaltList.slice(0, N),
+      "privateKeyF": secretSaltList.slice(N, 2*N),
+      "scoreMF": scoreList.slice(0, N),
+      "scoreFM": scoreList.slice(N, 2*N),
     }
-
+    
     setLogs(`Generating Proof...`)
-    const { proof, publicSignals } = await groth16.fullProve(Input, `./Matching${N}/Matching${N}_js/Matching${N}.wasm`, `./Matching${N}/circuit_final.zkey`)
+    const { proof, publicSignals } = await groth16.fullProve(Input, `./artifacts/Matching${N}/Matching${N}_js/Matching${N}.wasm`, `./artifacts/Matching${N}/circuit_final.zkey`)
     const editedPublicSignals = unstringifyBigInts(publicSignals);
     const editedProof = unstringifyBigInts(proof);
     const calldata = await groth16.exportSolidityCallData(editedProof, editedPublicSignals);    
     const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
-
+    
     const a = [argv[0], argv[1]];
     const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
     const c = [argv[6], argv[7]];
@@ -122,7 +129,7 @@ export default function Register({ contractInfoList }) {
     setLogs(`Register and Wait for confirmation`)   
     const tx = await contract.register(a, b, c, input);
     const receipt = await tx.wait();
-
+    
     // check if registered
     const isRegistered = await contract.registered();
     if (isRegistered) {
@@ -152,10 +159,21 @@ export default function Register({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await register(parseInt(values.size), values.secretSaltListString); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await register(values.address, parseInt(values.size), values.secretSaltListString); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>
+
+              <div className="field">
+                      <label className="label" htmlFor="address"> Your Matching Event Address </label>
+                      <Field
+                          name="address"
+                          type="text"
+                          className="input"
+                          placeholder="e.g. 0xce35A903d6033E6B5E309ddb8bF1Db5e33070Dbc"
+                      />
+                      <ErrorMessage name="address" render={renderError} />
+              </div>    
 
               <div className="field">
                       <label className="label" htmlFor="size"> Matching Size </label>

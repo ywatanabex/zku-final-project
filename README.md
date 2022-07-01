@@ -83,10 +83,13 @@ You can run the following command to deploy contracts.
 Actually, I have already executed this command and contracts have been deployed to the following addresses:
 
 ```
-Matching3: 0xBc6b16ECA1119079530efA8Ee474F7F746B43cac
-Matching4: 0x0f74002E94fE549E9c4C9d04f6cA806f29377EDd
-Matching5: 0x2B854e7d5e093AF6986E14458D075a72C4e231eB
+Matching3Factory: 0x49631065c21037F2eE8dF4fe7C54008bC66da850
+Matching4Factory: 0xE994aBBd258E7EB517401F26f086097eFDe54368
+Matching5Factory: 0x3fd53F4E8464aa9F1e21b8F93FDEcB6B87c558b5
 ```
+
+This info is stored in `deployed-contracts/harmony-dev.json`.
+
 
 ### Run UI locally
 UI for participants and the organizer will be launched with the following commands.
@@ -102,10 +105,9 @@ UI for participants and the organizer will be launched with the following comman
 
 Using this UI, the following procedure is used to calculate the matching.
 
-1. Each participant commits their hash of preference ranking on `submit` page.
-2. The organizer registers a stable matching on `register` page.
-3. Each participant checks their result on `result` page.
+1. The organizer start a Matching Event on `start` page and share the generated address to the participants.
+2. Each participant commits their hash of preference ranking on `submit` page.
+3. The organizer registers a stable matching on `register` page.
+4. Each participant checks their result on `result` page.
 
-The state variables of the contract can be reset for the next matching round using `reset` page.
 
-Currently, the UI is hosted on vercel: https://zku-final-project-8k9hb1l3b-ywatanabex.vercel.app/submit 

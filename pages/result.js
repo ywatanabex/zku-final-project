@@ -30,43 +30,50 @@ export default function Result({ contractInfoList }) {
   });
 
   const initialValues = {
+    address: '',
     size: '',
     group: '',
     indexNumber: '',
     secretSalt: '',
   };
-//   const initialValues = {
-//     size: 3,
-//     group: 'Man',
-//     indexNumber: 1,
-//     secretSalt: 123456,
-//   };
+  //  const initialValues = {
+  //    address: '0x9f99af641CE232B53C51014D04006182bf9005ac',
+  //    size: 3,
+  //    group: 'Man',
+  //    indexNumber: 1,
+  //    secretSalt: 123456,
+  //  };
 
   const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
-  async function result(N, group, indexNumber, secretSalt) {
-    setLogs(`set log in submit; N=${N}, group=${group}, indexNumber=${indexNumber}, secretSalt=${secretSalt}`);
+  async function result(address, N, group, indexNumber, secretSalt) {
+    //setLogs(`set log in submit; N=${N}, group=${group}, indexNumber=${indexNumber}, secretSalt=${secretSalt}`);
     const index = indexNumber - 1;  // index is from 0 to N-1. (internal representation)
     const offset = (group === 'Man')?  0 : N; // 0 for Men, N for Women.
     const poseidon = await buildPoseidon(); 
-
+    
     // Contract
     const contractInfo = contractInfoList.filter(i => i['name'] = `Matching${N}`)[0]
-    const contractAddress = contractInfo['address']
+    //const contractAddress = contractInfo['address']
+    const contractAddress = address;
     const contractArtifact = contractInfo['artifact']
-
+    
     setLogs('Sign with Metamask Wallet')
     const provider = (await detectEthereumProvider())
     await provider.request({ method: "eth_requestAccounts" })
     const ethersProvider = new providers.Web3Provider(provider)
     const signer = ethersProvider.getSigner()
     const message = await signer.signMessage("Sign this message to commit the hash of your preference ranking.")    
+    
+    // const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
+    // const signer = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", provider);    
+    
     const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
-        
+    
     const mHash = await contract.matchingHash(offset + index);
     const partnerIndex = decodeMatchingHash(poseidon, secretSalt, mHash, N);
     const oppositeGroup = (group === 'Man')?  'Woman' : 'Man';
-
+    
     if (partnerIndex !== -1) {
         setLogs(`You are matched with a ${oppositeGroup} of Index Number = ${partnerIndex + 1}`)   // Index Number is from 1 to N.
     } else {
@@ -91,10 +98,21 @@ export default function Result({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await result(parseInt(values.size), values.group, values.indexNumber, values.secretSalt); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await result(values.address, parseInt(values.size), values.group, values.indexNumber, values.secretSalt); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>
+
+              <div className="field">
+                      <label className="label" htmlFor="address"> Your Matching Event Address </label>
+                      <Field
+                          name="address"
+                          type="text"
+                          className="input"
+                          placeholder="e.g. 0xce35A903d6033E6B5E309ddb8bF1Db5e33070Dbc"
+                      />
+                      <ErrorMessage name="address" render={renderError} />
+              </div>    
 
               <div className="field">
                       <label className="label" htmlFor="size"> Matching Size </label>
@@ -156,7 +174,7 @@ export default function Result({ contractInfoList }) {
               */}
 
               <p></p>       
-              <button type="submit" className={styles.button}> Submit </button>
+              <button type="submit" className={styles.button}> Show Result </button>
 
               <div className={styles.logs}>{logs}</div>  
           </Form>

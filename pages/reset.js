@@ -1,22 +1,22 @@
-import { readFileSync } from 'fs';
 import Head from 'next/head';
 import Image from 'next/image';
 import styles from '../styles/Home.module.css';
 import React from "react";
 import * as Yup from "yup";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { buildPoseidon } from 'circomlibjs';
 import { ethers, providers } from "ethers";
 import detectEthereumProvider from "@metamask/detect-provider"
-import { rankingToScore } from "../src/stable-matching"
+import { getContractArtifact } from "../src/contract-utils"
 
 
 export async function getStaticProps() {
-    const contractInfoList = JSON.parse(readFileSync('scripts/contracts-dev.json', {'encoding': 'utf-8'}));
-    for (let ci of contractInfoList) {
-        ci['artifact'] = JSON.parse(readFileSync(ci['filePath'], {'encoding': 'utf-8'}));
-    }
-    return { props: { contractInfoList } }
+  const contractNames = ["Matching3", "Matching4", "Matching5"];
+  const contractInfoList = []
+  for (let nm of contractNames) {
+      let info = {"name": nm, "artifact": getContractArtifact(nm)};
+      contractInfoList.push(info);
+  }
+  return { props: { contractInfoList } }
 }
 
 export default function Reset({ contractInfoList }) {
@@ -27,22 +27,23 @@ export default function Reset({ contractInfoList }) {
   });
 
   const initialValues = {
+    address: '',
     size: '',
   };
   // const initialValues = {
+  //   reset: '0x9f99af641CE232B53C51014D04006182bf9005ac',
   //   size: 3,
   // };
 
   const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
-  async function reset(N) {
+  async function reset(address, N) {
     //setLogs(`set log in submit; N=${N}`);
 
     // Call contract method
     const contractInfo = contractInfoList.filter(i => i['name'] = `Matching${N}`)[0]
-    const contractAddress = contractInfo['address']
-    const contractArtifact = contractInfo['artifact']
-    const contractName = contractArtifact['contractName'];
+    const contractAddress = address;
+    const contractArtifact = contractInfo['artifact'];
 
     setLogs('Sign with Metamask Wallet')
     const provider = (await detectEthereumProvider())
@@ -52,9 +53,9 @@ export default function Reset({ contractInfoList }) {
     const message = await signer.signMessage(`Sign this message to reset the contract (address=${contractAddress})`)
     
     const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
-    setLogs("Calling contract...")    
-    await contract.reset();
-    setLogs(`Contract has been reset.\n contractName = ${contractName},\n contractAddress = ${contractAddress}`);
+    setLogs("Calling contract...") 
+    const tx = await contract.reset();    // blocked if the call does not work.
+    setLogs(`Contract has been reset.`); 
 
   }
 
@@ -77,10 +78,21 @@ export default function Reset({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await reset(parseInt(values.size)); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await reset(values.address, parseInt(values.size)); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>
+
+              <div className="field">
+                      <label className="label" htmlFor="address"> Matching Event Address </label>
+                      <Field
+                          name="address"
+                          type="text"
+                          className="input"
+                          placeholder="e.g. 0xce35A903d6033E6B5E309ddb8bF1Db5e33070Dbc"
+                      />
+                      <ErrorMessage name="address" render={renderError} />
+              </div>      
 
               <div className="field">
                       <label className="label" htmlFor="size"> Matching Size </label>

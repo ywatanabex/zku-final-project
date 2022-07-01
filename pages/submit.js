@@ -9,20 +9,24 @@ import { buildPoseidon } from 'circomlibjs';
 import { ethers, providers } from "ethers";
 import detectEthereumProvider from "@metamask/detect-provider"
 import { rankingToScore } from "../src/stable-matching"
+import { getContractArtifact } from "../src/contract-utils"
 
 
 export async function getStaticProps() {
-    const contractInfoList = JSON.parse(readFileSync('scripts/contracts-dev.json', {'encoding': 'utf-8'}));
-    for (let ci of contractInfoList) {
-        ci['artifact'] = JSON.parse(readFileSync(ci['filePath'], {'encoding': 'utf-8'}));
-    }
-    return { props: { contractInfoList } }
+  const contractNames = ["Matching3", "Matching4", "Matching5"];
+  const contractInfoList = []
+  for (let nm of contractNames) {
+      let info = {"name": nm, "artifact": getContractArtifact(nm)};
+      contractInfoList.push(info);
+  }
+  return { props: { contractInfoList } }
 }
 
 export default function Submit({ contractInfoList }) {
   const [logs, setLogs] = React.useState("");
 
   const validationSchema = Yup.object({
+    address: Yup.string().min(42).max(42).required(),  // length 42 starting with 0x
     size: Yup.number().min(3).max(5).required("Please select your matching size"),
     group: Yup.string().required("Please select your group").oneOf(["Man", "Woman"]),
     indexNumber: Yup.number().min(1).required(),  // TODO: how to add max limit N=size?
@@ -31,24 +35,25 @@ export default function Submit({ contractInfoList }) {
   });
 
   const initialValues = {
+    address: '',
     size: '',
     group: '',
     indexNumber: '',
     secretSalt: '',
     rankingNumberString: '',
   };
-//   const initialValues = {
-//     size: 3,
-//     group: 'Man',
-//     indexNumber: 1,
-//     secretSalt: 123456,
-//     rankingNumberString: '1,3,2',
-//   };
+  // const initialValues = {
+  //   address: '0x9f99af641CE232B53C51014D04006182bf9005ac',
+  //   size: 3,
+  //   group: 'Man',
+  //   indexNumber: 1,
+  //   secretSalt: 123456,
+  //   rankingNumberString: '1,3,2',
+  // };
 
   const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
-  async function submit(N, group, indexNumber, secretSalt, rankingNumberString) {
-    //setLogs(`set log in submit; N=${N}, group=${group}, indexNumber=${indexNumber}, secretSalt=${secretSalt}, rankingNumberString=${rankingNumberString}`);
+  async function submit(address, N, group, indexNumber, secretSalt, rankingNumberString) {
     const index = indexNumber - 1;  // index is from 0 to N-1. (internal representation)
     const offset = (group === 'Man')?  0 : N; // 0 for Men, N for Women.
 
@@ -72,20 +77,29 @@ export default function Submit({ contractInfoList }) {
 
     // Call contract method
     const contractInfo = contractInfoList.filter(i => i['name'] = `Matching${N}`)[0]
-    const contractAddress = contractInfo['address']
+    const contractAddress = address;
     const contractArtifact = contractInfo['artifact']
-
+    
     setLogs('Sign with Metamask Wallet')
     const provider = (await detectEthereumProvider())
     await provider.request({ method: "eth_requestAccounts" })
     const ethersProvider = new providers.Web3Provider(provider)
     const signer = ethersProvider.getSigner()
     const message = await signer.signMessage("Sign this message to commit the hash of your preference ranking.")
+
+    // const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
+    // const signer = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", provider);    
     
+
     const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
-    setLogs("Calling contract...")    
-    await contract.commitScoreHash(offset + index, sHash);
-    setLogs(`Your hash is commited in the blockchain.\n hash = ${sHash},\n contractAddress = ${contractAddress}`);
+    const sh = await contract.scoreHash(offset + index);
+    if ( BigInt(sh) === BigInt(0) ) {
+      setLogs("Calling contract...")    
+      const tx = await contract.commitScoreHash(offset + index, sHash);
+      setLogs(`Your hash is commited in the blockchain. hash = ${sHash}`);
+    } else {
+      setLogs('Cannot commit because there is a commit already.')
+    }
 
   }
 
@@ -108,10 +122,21 @@ export default function Submit({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await submit(parseInt(values.size), values.group, values.indexNumber, values.secretSalt, values.rankingNumberString); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await submit(values.address, parseInt(values.size), values.group, values.indexNumber, values.secretSalt, values.rankingNumberString); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>
+
+              <div className="field">
+                      <label className="label" htmlFor="address"> Matching Event Address </label>
+                      <Field
+                          name="address"
+                          type="text"
+                          className="input"
+                          placeholder="e.g. 0xce35A903d6033E6B5E309ddb8bF1Db5e33070Dbc"
+                      />
+                      <ErrorMessage name="address" render={renderError} />
+              </div>      
 
               <div className="field">
                       <label className="label" htmlFor="size"> Matching Size </label>

@@ -14,18 +14,20 @@
     "hardhat": "^2.9.3"
   },
   "scripts": {
+    "clean": "bash scripts/remove-artifacts.sh",
     "compile": "yarn run compile:circuit && yarn run compile:contract",
     "compile:circuit": "bash scripts/compile-circuits.sh && bash scripts/copy-circuits-data.sh && node scripts/bump-solidity.js",
     "compile:contract": "npx hardhat compile",
     "test": "npx hardhat test"
   },
   "dependencies": {
-    "snarkjs": "^0.4.16",
     "@metamask/detect-provider": "^1.2.0",
+    "commander": "^9.3.0",
     "formik": "^2.2.9",
     "next": "^12.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "snarkjs": "^0.4.16",
     "yup": "^0.32.11"
   }
 }

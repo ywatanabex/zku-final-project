@@ -1,24 +1,49 @@
 // Deploy Contract to Harmony Testnet
+// e.g. % node scripts/deploy-contracts.js --network hardhat
 const { ethers } = require("ethers");
+const { program } = require('commander');
 
-var deploy = async function(contractFile, chainURL, key) {    
+var deploy = async function(contractName, chainURL, key) {    
     if (key === undefined) {console.log("key is not set"); return}
+    const { getContractArtifact } = require('../src/contract-utils.js');  // this cannot be at the top
 
     const provider = new ethers.providers.JsonRpcProvider(chainURL);
-    const signer = new ethers.Wallet(key, provider);    
-    const contractArtifact  = require(contractFile)
+    const signer = new ethers.Wallet(key, provider);
+    const contractArtifact  = getContractArtifact(contractName);
     const factory = new ethers.ContractFactory(contractArtifact.abi, contractArtifact.bytecode, signer);
     const contract = await factory.deploy();
-    console.log(`${contractFile} deployed to:`, contract.address);
+    console.log(`${contractName} deployed to:`, contract.address);
+    return contract.address;
 }
 
-var main = async function () {
+var main = async function (networkName) {
+    const contractInfoList = [];
     for (let N=3; N <=5; N++) {
-        const contractFile = `../artifacts/contracts/Matching${N}.sol/Matching${N}.json`;
-        const chainURL = "https://api.s0.ps.hmny.io";  // Harmony Dev Network (https://docs.harmony.one/home/developers/api)
+        const contractName = `Matching${N}Factory`
+
+        let chainURL;
+        if (networkName == 'hardhat' ) {
+            chainURL = "http://localhost:8545";
+        } else if (networkName == 'harmony-dev') {
+            chainURL = "https://api.s0.ps.hmny.io";  // Harmony Dev Network (https://docs.harmony.one/home/developers/api)
+        } else if (networkName == 'harmony-main') {
+            chainURL = "https://api.s0.t.hmny.io";
+        } else {
+            console.log(`Unknown network name: ${networkName}`);
+            return;
+        }
+
         const key = process.env.privateKey0;  
-        await deploy(contractFile, chainURL, key)
+        const contractAddress = await deploy(contractName, chainURL, key);
+        const info = {"name": contractName, "address": contractAddress, "url": chainURL}
+        contractInfoList.push(info);
+    }
+    for (let info of contractInfoList) {
+        console.log(JSON.stringify(info))
     }
 }
 
-main()
+program.option('--network <name>');
+program.parse();
+const options = program.opts();
+main(options.network)
