@@ -111,3 +111,5 @@ Using this UI, the following procedure is used to calculate the matching.
 4. Each participant checks their result on `result` page.
 
 
+Currently, the UI is hosted on https://zku-final-project-izsjpbaxo-ywatanabex.vercel.app/
+
