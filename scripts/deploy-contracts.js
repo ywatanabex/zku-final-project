@@ -1,5 +1,6 @@
 // Deploy Contract to Harmony Testnet
 // e.g. % node scripts/deploy-contracts.js --network hardhat
+//      % node scripts/deploy-contracts.js --network harmony-dev
 const { ethers } = require("ethers");
 const { program } = require('commander');
 
@@ -18,7 +19,7 @@ var deploy = async function(contractName, chainURL, key) {
 
 var main = async function (networkName) {
     const contractInfoList = [];
-    for (let N=3; N <=5; N++) {
+    for (let N=3; N <=5; N++) { 
         const contractName = `Matching${N}Factory`
 
         let chainURL;
@@ -41,6 +42,7 @@ var main = async function (networkName) {
     for (let info of contractInfoList) {
         console.log(JSON.stringify(info))
     }
+    console.log(`Copy these JSONs to ../deployed-contracts/${networkName}.json`)
 }
 
 program.option('--network <name>');

@@ -8,8 +8,8 @@ const { poseidonContract, buildPoseidon } = require("circomlibjs");
 const { rankingToScore, computeStableMatching, matchingToArray } = require('../src/stable-matching');
 const { unstringifyBigInts, decodeMatchingHash } = require('../src/utils');
 
-//const scenarioPathList = ['./scenario01.json', './scenario02.json', './scenario03.json']
-const scenarioPathList = ['./scenario01.json']
+const scenarioPathList = ['./scenario01.json', './scenario02.json', './scenario03.json']
+//const scenarioPathList = ['./scenario01.json']
 
 for (let scenarioPath of scenarioPathList) {
     scenario = require(scenarioPath);

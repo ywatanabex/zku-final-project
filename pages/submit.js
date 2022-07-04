@@ -10,98 +10,201 @@ import { ethers, providers } from "ethers";
 import detectEthereumProvider from "@metamask/detect-provider"
 import { rankingToScore } from "../src/stable-matching"
 import { getContractArtifact } from "../src/contract-utils"
+import { uint8ArrayToBase64, base64ToUint8Array, bigIntToUint8Array, uint8ArrayToBigInt } from '../src/binary-utils';
+import { encrypt, decrypt, getEncryptionPublicKey } from '@metamask/eth-sig-util'
 
 
 export async function getStaticProps() {
-  const contractNames = ["Matching3", "Matching4", "Matching5"];
-  const contractInfoList = []
-  for (let nm of contractNames) {
-      let info = {"name": nm, "artifact": getContractArtifact(nm)};
-      contractInfoList.push(info);
-  }
-  return { props: { contractInfoList } }
+    const contractNames = ["Matching3", "Matching4", "Matching5"];
+    const contractInfoList = []
+    for (let nm of contractNames) {
+        let info = {"name": nm, "artifact": getContractArtifact(nm)};
+        contractInfoList.push(info);
+    }
+    return { props: { contractInfoList } }
 }
 
+
 export default function Submit({ contractInfoList }) {
-  const [logs, setLogs] = React.useState("");
+    const [logs, setLogs] = React.useState("");
+    const [logs_err, setLogs_err] = React.useState("");
 
-  const validationSchema = Yup.object({
-    address: Yup.string().min(42).max(42).required(),  // length 42 starting with 0x
-    size: Yup.number().min(3).max(5).required("Please select your matching size"),
-    group: Yup.string().required("Please select your group").oneOf(["Man", "Woman"]),
-    indexNumber: Yup.number().min(1).required(),  // TODO: how to add max limit N=size?
-    secretSalt: Yup.number().min(1).required(),   // TODO: add max limit
-    rankingNumberString: Yup.string().matches(/^[,0-9]+$/, 'Type comma-separated numbers from the most preffered.').required(),    // comma separated numbers
-  });
+    const validationSchema = Yup.object({
+        address: Yup.string().matches(/^0x/, "The address is a 42 characters length string starting with \"0x\"").min(42).max(42).required("Address shared from the organizer is required"),  // length 42 starting with 0x
+        size: Yup.number().min(3).max(5).required("Please select matching size"),
+        group: Yup.string().required("Please select your group").oneOf(["Man", "Woman"]),
+        indexNumber: Yup.number().min(1, "Your Index Number must be greater than or equal to 1").required("Your index number is required").test({
+            name: 'max',
+            message: 'Your index number must be less than or equal to the matching size',
+            test: function (value) {
+                return value <= parseFloat(this.parent.size)
+            },
+        }),
+        secretSalt: Yup.string().required("Your secret salt is required").matches(/^[0-9]+$/).test({
+            name: 'min',
+            message: "Secret Salt must be at least 30 digits",
+            test: function (value) {
+                try { return BigInt(value) >= BigInt("1" + "0".repeat(30)) }   // 10^30 (exponent not supported)
+                catch (eff) { return false }
+            },            
+        }).test({
+            name: 'max',
+            exclusive: false,
+            params: { },
+            message: "Secret Salt must be less than 77 digits",  // less than circom modulo p
+            test: function (value) {
+                try { return BigInt(value) < BigInt("1" + "0".repeat(77)) } 
+                catch (err) { return false }
+            },            
+        }), 
+        rankingNumberString: Yup.string().matches(/^[,0-9]+$/, 'Type comma-separated numbers from the most preffered.').required("Your preference is required").test({
+            name: 'duplicates',
+            message: `There are duplicate numbers`,
+            test: function (value) {
+                try { 
+                    const ranking = value.split(',').filter(i => i.length > 0).map(i => parseInt(i));
+                    const rankingSet = new Set(ranking);
+                    if ( ranking.length === rankingSet.size ) { return true }
+                    else { return false }
+                }
+                catch (err) { return false }
+            }
+        }).test({
+            name: 'all',
+            message: `You must rank all candidates`,
+            test: function (value) {
+                try {
+                    const ranking = value.split(',').filter(i => i.length > 0).map(i => parseInt(i));
+                    if (ranking.length !== this.parent.size) {return false};
+                    return true
+                }
+                catch (err) { return false }
+            }
+        }).test({
+            name: 'min',
+            message: `Numbers are greater than or equal to 1`,
+            test: function (value) {
+                try {
+                    const ranking = value.split(',').filter(i => i.length > 0).map(i => parseInt(i));
+                    if (Math.min(...ranking) < 1) {return false};
+                    return true
+                }
+                catch (err) { return false }
+            }
+        }).test({
+            name: 'max',
+            message: `Numbers are less than or equal to the matching size`,
+            test: function (value) {
+                try {
+                    const ranking = value.split(',').filter(i => i.length > 0).map(i => parseInt(i));
+                    if (Math.max(...ranking) !== this.parent.size) {return false};
+                    return true
+                }
+                catch (err) { return false }
+            }
+        }),  
+    });
 
-  const initialValues = {
-    address: '',
-    size: '',
-    group: '',
-    indexNumber: '',
-    secretSalt: '',
-    rankingNumberString: '',
-  };
-  // const initialValues = {
-  //   address: '0x9f99af641CE232B53C51014D04006182bf9005ac',
-  //   size: 3,
-  //   group: 'Man',
-  //   indexNumber: 1,
-  //   secretSalt: 123456,
-  //   rankingNumberString: '1,3,2',
-  // };
+    // const initialValues = {
+    //     address: '',
+    //     size: '',
+    //     group: '',
+    //     indexNumber: '',
+    //     secretSalt: '',
+    //     rankingNumberString: '',
+    // };
+    const initialValues = {
+        address: '0xa65c187b9808D6A6ABE7e8a91e7AbBF6ee766B6B',
+        size: 3,
+        group: 'Man',
+        indexNumber: 1,
+        secretSalt: '123456789012345678901234567890123',
+        rankingNumberString: '1,3,2',
+    };
 
-  const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
+    const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
-  async function submit(address, N, group, indexNumber, secretSalt, rankingNumberString) {
-    const index = indexNumber - 1;  // index is from 0 to N-1. (internal representation)
-    const offset = (group === 'Man')?  0 : N; // 0 for Men, N for Women.
+    async function submit(address, N, group, indexNumber, secretSalt, rankingNumberString) {
+        const index = indexNumber - 1;  // index is from 0 to N-1. (internal representation)
+        const offset = (group === 'Man')?  0 : N; // 0 for Men, N for Women.
 
-    // Parse preferenceListString
-    const ranking = rankingNumberString.split(',').map(i => parseInt(i) - 1);  // e.g. [0, 2, 1]
-    // //const rankingSet = new Set(ranking)
-    // //assert( ranking.length == N )   // TODO: this should be checked by Yup
-    // //assert( ranking.length == ranking.size )   // execution stucks in assert for some reason ...
-    // //assert( preferenceList.every(i => 0 <= i && i < N) )
-    if (ranking.length !== N) {
-        setLogs(`ERROR: Preffered Partner must include ${N} numbers.`)
-        return;
-    }
-    const score = rankingToScore(ranking)
+        // Parse preferenceListString
+        const ranking = rankingNumberString.split(',').filter(i => i.length > 0).map(i => parseInt(i) - 1);  // e.g. [0, 2, 1]
+        if (ranking.length !== N) {
+            setLogs_err(`ERROR: Preffered Partner must include ${N} numbers.`)
+            return;
+        }
+        const score = rankingToScore(ranking)
 
-    // Compute hash   
-    const poseidon = await buildPoseidon(); 
-    const F = poseidon.F;
-    const sHash = F.toObject(poseidon([secretSalt, ...score]));  // secretSalt is string, but it works 
-    //setLogs(`sHash = ${sHash}`)
 
-    // Call contract method
-    const contractInfo = contractInfoList.filter(i => i['name'] = `Matching${N}`)[0]
-    const contractAddress = address;
-    const contractArtifact = contractInfo['artifact']
+        // Compute hash
+        const poseidon = await buildPoseidon(); 
+        const F = poseidon.F;
+        const sHash = F.toObject(poseidon([secretSalt, ...score]));  // secretSalt is string, but it works 
+
+
+        // Read data from contract
+        const contractInfo = contractInfoList.filter(i => i['name'] == `Matching${N}`)[0]
+        const contractAddress = address;
+        const contractArtifact = contractInfo['artifact']
     
-    setLogs('Sign with Metamask Wallet')
-    const provider = (await detectEthereumProvider())
-    await provider.request({ method: "eth_requestAccounts" })
-    const ethersProvider = new providers.Web3Provider(provider)
-    const signer = ethersProvider.getSigner()
-    const message = await signer.signMessage("Sign this message to commit the hash of your preference ranking.")
+        let signer;
+        try {
+            setLogs('Sign with Metamask Wallet')
+            const provider = (await detectEthereumProvider())
+            await provider.request({ method: "eth_requestAccounts" })
+            const ethersProvider = new providers.Web3Provider(provider)
+            signer = ethersProvider.getSigner()
+            const message = await signer.signMessage("Sign this message to commit the hash of your preference ranking.")
+        } catch (err) {
+            setLogs("")
+            setLogs_err(`ERROR: please install Metamask on your browser.`)
+            return;
+        }
 
-    // const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
-    // const signer = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", provider);    
-    
+        let contract;
+        let sh;
+        let publicKeyHex;
+        try {
+            contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
+            sh = await contract.scoreHash(offset + index);
+            publicKeyHex = await contract.publicKey();  // hex string (starting with 0x)
+        } catch (err) {
+            setLogs("")
+            setLogs_err(`ERROR: failed to read contract data. address: ${contractAddress}, err: ${err}`)            
+        }
+        if ( BigInt(sh) !== BigInt(0) ) { 
+            setLogs_err('You cannot make a submission because there is a commit already.');
+            return;
+        }
 
-    const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
-    const sh = await contract.scoreHash(offset + index);
-    if ( BigInt(sh) === BigInt(0) ) {
-      setLogs("Calling contract...")    
-      const tx = await contract.commitScoreHash(offset + index, sHash);
-      setLogs(`Your hash is commited in the blockchain. hash = ${sHash}`);
-    } else {
-      setLogs('Cannot commit because there is a commit already.')
+        
+        // Encrypt secretSalt  
+        const publicKeyBase64 = uint8ArrayToBase64(bigIntToUint8Array(BigInt(publicKeyHex), 32));
+        const secretSaltBase64 = uint8ArrayToBase64(bigIntToUint8Array(BigInt(secretSalt), 32));
+        const enc = encrypt({publicKey: publicKeyBase64, data: secretSaltBase64, version: 'x25519-xsalsa20-poly1305'});
+        const encryptedSaltUint8Array = base64ToUint8Array(enc.ciphertext);
+        const encryptedSaltUint8Array1 = encryptedSaltUint8Array.slice(0, 32);
+        const encryptedSaltUint8Array2 = encryptedSaltUint8Array.slice(32);
+
+
+        // Write data to contract
+        try {
+            setLogs("Calling contract...")    
+            const tx = await contract.commitScoreHashAndSetEncryptedSalt(
+                offset + index,
+                sHash, 
+                base64ToUint8Array(enc.ephemPublicKey),              // 32 bytes
+                base64ToUint8Array(enc.nonce),                       // 24 bytes
+                encryptedSaltUint8Array1, encryptedSaltUint8Array2   // 32 + 28 = 60 bytes (for 32 bytes data)
+                );            
+            } 
+        catch (err) {
+            setLogs_err(`ERROR: failed to commit your data in the blockchain. err: ${err}`);
+            return;
+        }
+        setLogs(`Hash of your preference is commited in the blockchain. hash = ${sHash}`);
     }
-
-  }
 
   return (
     <div className={styles.container}>
@@ -122,7 +225,7 @@ export default function Submit({ contractInfoList }) {
         <Formik 
           initialValues={initialValues} 
           validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await submit(values.address, parseInt(values.size), values.group, values.indexNumber, values.secretSalt, values.rankingNumberString); resetForm()}}
+          onSubmit={async (values, { resetForm }) => {await submit(values.address, parseInt(values.size), values.group, values.indexNumber, BigInt(values.secretSalt), values.rankingNumberString); resetForm()}}
         >
           <Form>            
               <div className="container" style={{width: "100%"}}>
@@ -188,7 +291,7 @@ export default function Submit({ contractInfoList }) {
                           className="input"
                           placeholder="e.g. 12774367769825274767468634682317838448486152426"
                       />
-                      <ErrorMessage name="key" render={renderError} />
+                      <ErrorMessage name="secretSalt" render={renderError} />
                   </div>    
 
                   <div className="field">
@@ -211,6 +314,7 @@ export default function Submit({ contractInfoList }) {
               <button type="submit" className={styles.button}> Submit </button>
 
               <div className={styles.logs}>{logs}</div>  
+              <div className={styles.logs}>{logs_err}</div>  
           </Form>
          </Formik>
 

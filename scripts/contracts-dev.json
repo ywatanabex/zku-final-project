@@ -1,5 +1,0 @@
-[
-    {"name": "Matching3", "address": "0xBc6b16ECA1119079530efA8Ee474F7F746B43cac", "filePath": "artifacts/contracts/Matching3.sol/Matching3.json", "url": "https://api.s0.ps.hmny.io"},
-    {"name": "Matching4", "address": "0x0f74002E94fE549E9c4C9d04f6cA806f29377EDd", "filePath": "artifacts/contracts/Matching4.sol/Matching4.json", "url": "https://api.s0.ps.hmny.io"},
-    {"name": "Matching5", "address": "0x2B854e7d5e093AF6986E14458D075a72C4e231eB", "filePath": "artifacts/contracts/Matching5.sol/Matching5.json", "url": "https://api.s0.ps.hmny.io"}
-]

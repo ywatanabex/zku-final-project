@@ -1,2 +1,6 @@
 cache/
 node_modules/
+scripts/setenv-harmony.sh
+artifacts/build-info/
+artifacts/contracts/verifier*.sol/
+artifacts/contracts/*.sol/*.dbg.json

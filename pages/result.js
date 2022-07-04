@@ -9,76 +9,115 @@ import { buildPoseidon } from 'circomlibjs';
 import { ethers, providers } from "ethers";
 import detectEthereumProvider from "@metamask/detect-provider"
 import { decodeMatchingHash } from '../src/utils';
+import { getContractArtifact } from "../src/contract-utils"
 
 
 export async function getStaticProps() {
-    const contractInfoList = JSON.parse(readFileSync('scripts/contracts-dev.json', {'encoding': 'utf-8'}));
-    for (let ci of contractInfoList) {
-        ci['artifact'] = JSON.parse(readFileSync(ci['filePath'], {'encoding': 'utf-8'}));
-    }
-    return { props: { contractInfoList } }
+  const contractNames = ["Matching3", "Matching4", "Matching5"];
+  const contractInfoList = []
+  for (let nm of contractNames) {
+      let info = {"name": nm, "artifact": getContractArtifact(nm)};
+      contractInfoList.push(info);
+  }
+  return { props: { contractInfoList } }
 }
 
+
 export default function Result({ contractInfoList }) {
-  const [logs, setLogs] = React.useState("");
+    const [logs, setLogs] = React.useState("");
+    const [logs_err, setLogs_err] = React.useState("");
 
-  const validationSchema = Yup.object({
-    size: Yup.number().min(3).max(5).required("Please select your matching size"),
-    group: Yup.string().required("Please select your group").oneOf(["Man", "Woman"]),
-    indexNumber: Yup.number().min(1).required(),  // TODO: how to add max limit N=size?
-    secretSalt: Yup.number().min(1).required(),   // TODO: add max limit
-  });
+    // copied from submit.js
+    const validationSchema = Yup.object({
+        address: Yup.string().matches(/^0x/, "The address is a 42 characters length string starting with \"0x\"").min(42).max(42).required("Address shared from the organizer is required"),  // length 42 starting with 0x
+        size: Yup.number().min(3).max(5).required("Please select matching size"),
+        group: Yup.string().required("Please select your group").oneOf(["Man", "Woman"]),
+        indexNumber: Yup.number().min(1, "Your Index Number must be greater than or equal to 1").required("Your index number is required").test({
+            name: 'max',
+            message: 'Your index number must be less than or equal to the matching size',
+            test: function (value) {
+                return value <= parseFloat(this.parent.size)
+            },
+        }),
+        secretSalt: Yup.string().required("Your secret salt is required").matches(/^[0-9]+$/).test({
+            name: 'min',
+            message: "Secret Salt must be at least 30 digits",
+            test: function (value) {
+                try { return BigInt(value) >= BigInt("1" + "0".repeat(3)) }   // 10^30 (exponent not supported)
+                catch (eff) { return false }
+            },            
+        }).test({
+            name: 'max',
+            exclusive: false,
+            params: { },
+            message: "Secret Salt must be less than 77 digits",  // less than circom modulo p
+            test: function (value) {
+                try { return BigInt(value) < BigInt("1" + "0".repeat(77)) } 
+                catch (err) { return false }
+            },            
+        }), 
+    });
 
-  const initialValues = {
-    address: '',
-    size: '',
-    group: '',
-    indexNumber: '',
-    secretSalt: '',
-  };
-  //  const initialValues = {
-  //    address: '0x9f99af641CE232B53C51014D04006182bf9005ac',
-  //    size: 3,
-  //    group: 'Man',
-  //    indexNumber: 1,
-  //    secretSalt: 123456,
-  //  };
+    // const initialValues = {
+    //     address: '',
+    //     size: '',
+    //     group: '',
+    //     indexNumber: '',
+    //     secretSalt: '',
+    // };
+    const initialValues = {
+        address: '0xa65c187b9808D6A6ABE7e8a91e7AbBF6ee766B6B',
+        size: 3,
+        group: 'Man',
+        indexNumber: 1,
+        secretSalt: 123456,
+    };
 
-  const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
+    const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
-  async function result(address, N, group, indexNumber, secretSalt) {
-    //setLogs(`set log in submit; N=${N}, group=${group}, indexNumber=${indexNumber}, secretSalt=${secretSalt}`);
-    const index = indexNumber - 1;  // index is from 0 to N-1. (internal representation)
-    const offset = (group === 'Man')?  0 : N; // 0 for Men, N for Women.
-    const poseidon = await buildPoseidon(); 
+    async function result(address, N, group, indexNumber, secretSalt) {
+        const index = indexNumber - 1;  // index is from 0 to N-1. (internal representation)
+        const offset = (group === 'Man')?  0 : N; // 0 for Men, N for Women.
+        const poseidon = await buildPoseidon(); 
     
-    // Contract
-    const contractInfo = contractInfoList.filter(i => i['name'] = `Matching${N}`)[0]
-    //const contractAddress = contractInfo['address']
-    const contractAddress = address;
-    const contractArtifact = contractInfo['artifact']
+        // Contract
+        const contractInfo = contractInfoList.filter(i => i['name'] == `Matching${N}`)[0]
+        const contractAddress = address;
+        const contractArtifact = contractInfo['artifact']
     
-    setLogs('Sign with Metamask Wallet')
-    const provider = (await detectEthereumProvider())
-    await provider.request({ method: "eth_requestAccounts" })
-    const ethersProvider = new providers.Web3Provider(provider)
-    const signer = ethersProvider.getSigner()
-    const message = await signer.signMessage("Sign this message to commit the hash of your preference ranking.")    
+        let signer;
+        try {
+            setLogs('Sign with Metamask Wallet')
+            const provider = (await detectEthereumProvider())
+            await provider.request({ method: "eth_requestAccounts" })
+            const ethersProvider = new providers.Web3Provider(provider)
+            signer = ethersProvider.getSigner()
+            const message = await signer.signMessage("Sign this message to commit the hash of your preference ranking.")    
+        } catch (err) {
+            setLogs("")
+            setLogs_err(`ERROR: please install Metamask on your browser.`)
+            return;
+        }
+
+        // Get Matching
+        const oppositeGroup = (group === 'Man')?  'Woman' : 'Man';
+        let partnerIndex;
+        try {
+            const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);    
+            const mHash = await contract.matchingHash(offset + index);
+            partnerIndex = decodeMatchingHash(poseidon, secretSalt, mHash, N);
+        } catch (err) {
+            setLogs("")
+            setLogs_err(`ERROR: failed to get matching result. err: ${err}`)
+            return;
+        }
     
-    // const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
-    // const signer = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", provider);    
-    
-    const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
-    
-    const mHash = await contract.matchingHash(offset + index);
-    const partnerIndex = decodeMatchingHash(poseidon, secretSalt, mHash, N);
-    const oppositeGroup = (group === 'Man')?  'Woman' : 'Man';
-    
-    if (partnerIndex !== -1) {
-        setLogs(`You are matched with a ${oppositeGroup} of Index Number = ${partnerIndex + 1}`)   // Index Number is from 1 to N.
-    } else {
-        setLogs("ERROR: double check the field values and try again")
-    }
+        if (partnerIndex !== -1) {
+            setLogs(`You are matched with the ${oppositeGroup} of Index Number = ${partnerIndex + 1}`)   // Index Number is from 1 to N.
+        } else {
+            setLogs("")
+            setLogs("ERROR: failed to decode matching result. Please double check the field values and try again")
+        }
   }
 
   return (
@@ -164,7 +203,7 @@ export default function Result({ contractInfoList }) {
                           className="input"
                           placeholder="e.g. 12774367769825274767468634682317838448486152426"
                       />
-                      <ErrorMessage name="key" render={renderError} />
+                      <ErrorMessage name="secretSalt" render={renderError} />
                   </div>    
             
 
@@ -177,6 +216,7 @@ export default function Result({ contractInfoList }) {
               <button type="submit" className={styles.button}> Show Result </button>
 
               <div className={styles.logs}>{logs}</div>  
+              <div className={styles.logs}>{logs_err}</div>  
           </Form>
          </Formik>
 

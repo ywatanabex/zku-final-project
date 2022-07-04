@@ -1,0 +1,28 @@
+//SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.0;
+import "./Matching3.sol";
+import "./Matching4.sol";
+import "./Matching5.sol";
+
+contract Matching3Factory {
+    event MatchingEventCreated(address senderAdress, address eventAddress);
+
+    function createMatching(uint size) public returns (bool success) {
+        if (size == 3) {
+            Matching3 matching3 = new Matching3();
+            emit MatchingEventCreated(msg.sender, address(matching3));
+            return true;
+        } else if (size == 4) {
+            Matching4 matching4 = new Matching4();
+            emit MatchingEventCreated(msg.sender, address(matching4));
+            return true;
+        } else if (size == 5) {
+            Matching5 matching5 = new Matching5();
+            emit MatchingEventCreated(msg.sender, address(matching5));
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+}  

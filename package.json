@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@metamask/detect-provider": "^1.2.0",
+    "@metamask/eth-sig-util": "^4.0.1",
     "commander": "^9.3.0",
     "formik": "^2.2.9",
     "next": "^12.1.6",

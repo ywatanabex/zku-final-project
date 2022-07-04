@@ -1,5 +1,5 @@
 [
-    {"name":"Matching3Factory","address":"0x49631065c21037F2eE8dF4fe7C54008bC66da850","url":"https://api.s0.ps.hmny.io"},
-    {"name":"Matching4Factory","address":"0xE994aBBd258E7EB517401F26f086097eFDe54368","url":"https://api.s0.ps.hmny.io"},  
-    {"name":"Matching5Factory","address":"0x3fd53F4E8464aa9F1e21b8F93FDEcB6B87c558b5","url":"https://api.s0.ps.hmny.io"}
+    {"name":"Matching3Factory","address":"0xA516B5143D02196Ee9A0Cd430776Ae12d65a4eE0","url":"https://api.s0.ps.hmny.io"},
+    {"name":"Matching4Factory","address":"0x8627386da772399f79A921B8aE043921d8470C06","url":"https://api.s0.ps.hmny.io"},
+    {"name":"Matching5Factory","address":"0xE5911ce38111760B57b28966037DAB5eC688f56E","url":"https://api.s0.ps.hmny.io"}
 ]

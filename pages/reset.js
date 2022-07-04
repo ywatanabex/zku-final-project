@@ -20,42 +20,52 @@ export async function getStaticProps() {
 }
 
 export default function Reset({ contractInfoList }) {
-  const [logs, setLogs] = React.useState("");
+    const [logs, setLogs] = React.useState("");
 
-  const validationSchema = Yup.object({
-    size: Yup.number().min(3).max(5).required("Please select your matching size"),
-  });
+    const validationSchema = Yup.object({
+        size: Yup.number().min(3).max(5).required("Please select your matching size"),
+    });
 
-  const initialValues = {
-    address: '',
-    size: '',
-  };
-  // const initialValues = {
-  //   reset: '0x9f99af641CE232B53C51014D04006182bf9005ac',
-  //   size: 3,
-  // };
+    const initialValues = {
+        address: '',
+        size: '',
+    };
+    // const initialValues = {
+    //   reset: '0x9f99af641CE232B53C51014D04006182bf9005ac',
+    //   size: 3,
+    // };
 
-  const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
+    const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
-  async function reset(address, N) {
-    //setLogs(`set log in submit; N=${N}`);
+    async function reset(address, N) {
 
-    // Call contract method
-    const contractInfo = contractInfoList.filter(i => i['name'] = `Matching${N}`)[0]
-    const contractAddress = address;
-    const contractArtifact = contractInfo['artifact'];
+        // Call contract method
+        const contractInfo = contractInfoList.filter(i => i['name'] == `Matching${N}`)[0]
+        const contractAddress = address;
+        const contractArtifact = contractInfo['artifact'];
 
-    setLogs('Sign with Metamask Wallet')
-    const provider = (await detectEthereumProvider())
-    await provider.request({ method: "eth_requestAccounts" })
-    const ethersProvider = new providers.Web3Provider(provider)
-    const signer = ethersProvider.getSigner()
-    const message = await signer.signMessage(`Sign this message to reset the contract (address=${contractAddress})`)
-    
-    const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
-    setLogs("Calling contract...") 
-    const tx = await contract.reset();    // blocked if the call does not work.
-    setLogs(`Contract has been reset.`); 
+        let signer;
+        try {
+            setLogs('Sign with Metamask Wallet')
+            const provider = (await detectEthereumProvider())
+            await provider.request({ method: "eth_requestAccounts" })
+            const ethersProvider = new providers.Web3Provider(provider)
+            signer = ethersProvider.getSigner()
+            const message = await signer.signMessage(`Sign this message to reset the contract (address=${contractAddress})`)
+        } catch (err) {
+            setLogs(`err: ${err}`);
+            return;
+        }
+        
+        try {
+            const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
+            setLogs("Calling contract...") 
+            const tx = await contract.reset();
+        } catch (err) {
+            setLogs(`ERROR: reset failed. err: ${err}`);
+            return;            
+        }
+        setLogs(`Contract has been reset.`); 
 
   }
 
