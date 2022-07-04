@@ -61,6 +61,7 @@ export default function Reset({ contractInfoList }) {
             const contract = new ethers.Contract(contractAddress, contractArtifact['abi'], signer);
             setLogs("Calling contract...") 
             const tx = await contract.reset();
+            const receipt = await tx.wait();
         } catch (err) {
             setLogs(`ERROR: reset failed. err: ${err}`);
             return;            

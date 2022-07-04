@@ -14,9 +14,10 @@ const groth16  = require("snarkjs").groth16;
 
 export async function getStaticProps() {
     // 1. MatchingNFactory
+    // TODO: add config for this
     //const contractInfoList = JSON.parse(readFileSync('deployed-contracts/hardhat.json', {'encoding': 'utf-8'}));
-    const contractInfoList = JSON.parse(readFileSync('deployed-contracts/harmony-dev.json', {'encoding': 'utf-8'}));
-    //const contractInfoList = JSON.parse(readFileSync('deployed-contracts/harmony-main.json', {'encoding': 'utf-8'}));
+    //const contractInfoList = JSON.parse(readFileSync('deployed-contracts/harmony-dev.json', {'encoding': 'utf-8'}));
+    const contractInfoList = JSON.parse(readFileSync('deployed-contracts/harmony-main.json', {'encoding': 'utf-8'}));
     for (let ci of contractInfoList) {
         ci['artifact'] = getContractArtifact(ci['name']);
     }

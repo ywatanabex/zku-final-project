@@ -94,7 +94,9 @@ var main = async function(networkName, address, N) {
     } else if (networkName == 'harmony-dev') {
         chainURL = "https://api.s0.ps.hmny.io";  // Harmony Dev Network (https://docs.harmony.one/home/developers/api)
     } else if (networkName == 'harmony-main') {
-        chainURL = "https://api.s0.t.hmny.io";
+        //chainURL = "https://api.s0.t.hmny.io";
+        //chainURL = "https://api.harmony.one";
+        chainURL = "https://harmony-mainnet.chainstacklabs.com/";
     } else {
         console.log(`Unknown network name: ${networkName}`);
         return;
