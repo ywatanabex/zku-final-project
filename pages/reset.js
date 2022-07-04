@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import Image from 'next/image';
+import Link from 'next/link';
 import styles from '../styles/Home.module.css';
 import React from "react";
 import * as Yup from "yup";
@@ -67,78 +67,73 @@ export default function Reset({ contractInfoList }) {
         }
         setLogs(`Contract has been reset.`); 
 
-  }
+    }
 
-  return (
-    <div className={styles.container}>
-      <Head>
-        <title>Reset Contract</title>
-        <meta name="description" content="Reset Contract State Variables" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    return (
+        <div className={styles.container}>
+            <Head>
+                <title>Reset Contract</title>
+                <meta name="description" content="Reset Contract State Variables" />
+                <link rel="icon" href="/favicon.ico" />
+            </Head>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}> Reset Contract</h1>
-        <p className={styles.description}>
-            Click the button when you start a new zkMatching round.
-            <br></br>
-            State variables of the contract is reset.
-        </p>
+            <main className={styles.main}>
+                <h1 className={styles.title}> Reset Contract</h1>
+                <p className={styles.description}>
+                    Organizer can reset Matching Event Contract
+                </p>
 
-        <Formik 
-          initialValues={initialValues} 
-          validationSchema={validationSchema} 
-          onSubmit={async (values, { resetForm }) => {await reset(values.address, parseInt(values.size)); resetForm()}}
-        >
-          <Form>            
-              <div className="container" style={{width: "100%"}}>
+                <Formik 
+                initialValues={initialValues} 
+                validationSchema={validationSchema} 
+                onSubmit={async (values, { resetForm }) => {await reset(values.address, parseInt(values.size)); resetForm()}}
+                >
+                    <Form>            
+                        <div className={styles.container}>
 
-              <div className="field">
-                      <label className="label" htmlFor="address"> Matching Event Address </label>
-                      <Field
-                          name="address"
-                          type="text"
-                          className="input"
-                          placeholder="e.g. 0xce35A903d6033E6B5E309ddb8bF1Db5e33070Dbc"
-                      />
-                      <ErrorMessage name="address" render={renderError} />
-              </div>      
+                        <div className={styles.field}>
+                                <label className={styles.label} htmlFor="address"> Matching Event Address: </label>
+                                <Field
+                                    name="address"
+                                    type="text"
+                                    className={styles.addressform}
+                                    placeholder="e.g. 0xce35A903d6033E6B5E309ddb8bF1Db5e33070Dbc"
+                                />
+                                <ErrorMessage name="address" render={renderError} />
+                        </div>      
 
-              <div className="field">
-                      <label className="label" htmlFor="size"> Matching Size </label>
-                      <Field
-                          name="size"
-                          as="select"
-                          className="select"
-                          placeholder=""
-                      >
-                        <option value={""}>Select size</option>
-                        <option value={3}>3</option>
-                        <option value={4}>4</option>
-                        <option value={4}>5</option>
-                      </Field>                    
-                      <ErrorMessage name="size" render={renderError} />
-                  </div>
-            
-              </div>
+                        <div className={styles.field}>
+                                <label className={styles.label} htmlFor="size"> Matching Size: </label>
+                                <Field
+                                    name="size"
+                                    as="select"
+                                    className={styles.selectform}
+                                    placeholder=""
+                                >
+                                    <option value={""}>Select size</option>
+                                    <option value={3}>3</option>
+                                    <option value={4}>4</option>
+                                    <option value={4}>5</option>
+                                </Field>                    
+                                <ErrorMessage name="size" render={renderError} />
+                            </div>                    
+                        </div>
 
-              {/* 
-              */}
+                        <div className={styles.center}>                                                                                                             
+                            <button type="submit" className={styles.button}> Reset </button>
+                        </div>
 
-              <p></p>       
-              <button type="submit" className={styles.button}> Reset </button>
+                    </Form>
+                </Formik>
 
-              <div className={styles.logs}>{logs}</div>  
-          </Form>
-         </Formik>
+                <div className={styles.logs}>{logs}</div>  
+            </main>
 
-        
-
-
-
-      </main>
-
-
-    </div>
-  )
+            <footer className={styles.footer}>        
+                <Link href="/"> 
+                    <a>Back to home</a> 
+                </Link>
+            </footer>
+        </div>                
+    )
 }

@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import Head from 'next/head';
-import Image from 'next/image';
+import Link from 'next/link';
 import styles from '../styles/Home.module.css';
 import React from "react";
 import * as Yup from "yup";
@@ -39,12 +39,12 @@ export default function Start({ contractInfoList }) {
         size: Yup.number().min(3).max(5).required("Please select your matching size"),
     });
 
-    // const initialValues = {
-    //     size: '',
-    // };
     const initialValues = {
-        size: 3,
-    };  
+        size: '',
+    };
+    // const initialValues = {
+    //     size: 3,
+    // };  
 
     const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
@@ -126,9 +126,11 @@ export default function Start({ contractInfoList }) {
 
         <main className={styles.main}>
         <h1 className={styles.title}> Start a Matching Event</h1>
-        <p className={styles.description}>
-            Share the generated Matching Event address with participants.
-        </p>
+
+        <ol className={styles.description}> 
+            <li className={styles.list}> Select a matching size to create a new Matching Event </li>
+            <li className={styles.list}> Share the generated address with participants </li>
+        </ol> 
 
         <Formik 
             initialValues={initialValues} 
@@ -136,10 +138,9 @@ export default function Start({ contractInfoList }) {
             onSubmit={async (values, { resetForm }) => {await start(parseInt(values.size)); resetForm()}}
         >
             <Form>            
-                <div className="container" style={{width: "100%"}}>
-
-                <div className="field">
-                        <label className="label" htmlFor="size"> Matching Size </label>
+                <div className={styles.container}>
+                    <div>
+                        <label className={styles.p} htmlFor="size"> Matching Size: </label>
                         <Field
                             name="size"
                             as="select"
@@ -153,19 +154,32 @@ export default function Start({ contractInfoList }) {
                         </Field>                    
                         <ErrorMessage name="size" render={renderError} />
                     </div>
-                                                                                                        
+                    <br></br>
+                    <br></br>
+                    <div className={styles.center}>                                                                                                 
+                        <button type="submit" className={styles.button}> Start </button>
+                    </div>
                 </div>
-                <p></p>       
-                                    
-                <button type="submit" className={styles.button}> Start </button>
 
-                <div className={styles.logs}>{logs}</div>  
-                <h4 className={styles.logs}>{logs2}</h4>  
-                {renderError(logs_err)}
             </Form>
-            </Formik>
+        </Formik>
 
+        <div classsName={styles.container}> 
+            <div className={styles.p}>{logs}</div>  
+            <div className={styles.p}>{logs2}</div>
+            <div className={styles.p}> {renderError(logs_err)} </div>
+        </div>
         </main>
+
+        <footer className={styles.footer}>        
+            <Link href="/"> 
+                <a>Back to home</a> 
+            </Link>
+            <Link href="/">
+                <a>Go to register</a> 
+            </Link>
+        </footer>
+
     </div>
     )
 }

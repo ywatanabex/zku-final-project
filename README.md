@@ -1,6 +1,6 @@
 # zkMatching
 
-![hoge](banner.png)
+![zkMatching banner image](public/banner.png)
 
 zkMatching is used to find a stable matching without disclosing the preferences and the matching result to each other under the assumption that the organizer keeps the secret. The correctness of the stable matching is verified using Zero Knowledge Proof.
 
