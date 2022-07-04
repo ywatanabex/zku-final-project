@@ -34,14 +34,14 @@ export default function Register({ contractInfoList }) {
         size: Yup.number().min(3).max(5).required("Please select your matching size"),
     });
 
-    // const initialValues = {
-    //     address: '',
-    //     size: '',
-    // };
     const initialValues = {
-        address: '0xa65c187b9808D6A6ABE7e8a91e7AbBF6ee766B6B',
-        size: 3,
+        address: '',
+        size: '',
     };
+    // const initialValues = {
+    //     address: '0xa65c187b9808D6A6ABE7e8a91e7AbBF6ee766B6B',
+    //     size: 3,
+    // };
 
     const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
@@ -210,7 +210,7 @@ export default function Register({ contractInfoList }) {
             setLogs_err(`ERROR: failed in getting registered variable: ${err}`);
         }        
         if (isRegistered) {
-            setLogs(`Matching is successfully registered to address=${contractAddress}`)
+            setLogs(`Matching is successfully registered`)
         } else {
             setLogs("")
             setLogs_err(`Registration Failed`)
@@ -276,8 +276,8 @@ export default function Register({ contractInfoList }) {
             </Formik>
         
             <div classsName={styles.container}> 
-                <div className={styles.logs}>{logs}</div>  
-                <div className={styles.logs}>{logs_err}</div>  
+                <div className={styles.log}>{logs}</div>  
+                {renderError(logs_err)} 
             </div>
         </main>
 

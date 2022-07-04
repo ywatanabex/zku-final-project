@@ -126,7 +126,9 @@ export default function Reset({ contractInfoList }) {
                     </Form>
                 </Formik>
 
-                <div className={styles.logs}>{logs}</div>  
+                <div className={styles.container}>
+                    <div className={styles.log}>{logs}</div>  
+                </div>
             </main>
 
             <footer className={styles.footer}>        

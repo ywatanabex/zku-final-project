@@ -42,35 +42,35 @@ export default function Result({ contractInfoList }) {
             name: 'min',
             message: "Secret Salt must be at least 30 digits",
             test: function (value) {
-                try { return BigInt(value) >= BigInt("1" + "0".repeat(30)) }   // 10^30 (exponent not supported)
+                try { return BigInt(value) >= BigInt("1" + "0".repeat(29)) }   // 10^29 (exponent not supported)
                 catch (eff) { return false }
             },            
         }).test({
             name: 'max',
             exclusive: false,
             params: { },
-            message: "Secret Salt must be less than 77 digits",  // less than circom modulo p
+            message: "Secret Salt must be less than 76 digits",  // less than circom modulo p
             test: function (value) {
-                try { return BigInt(value) < BigInt("1" + "0".repeat(77)) } 
+                try { return BigInt(value) < BigInt("1" + "0".repeat(76)) } 
                 catch (err) { return false }
             },            
         }), 
     });
 
-    // const initialValues = {
-    //     address: '',
-    //     size: '',
-    //     group: '',
-    //     indexNumber: '',
-    //     secretSalt: '',
-    // };
     const initialValues = {
-        address: '0xa65c187b9808D6A6ABE7e8a91e7AbBF6ee766B6B',
-        size: 3,
-        group: 'Man',
-        indexNumber: 1,
-        secretSalt: '123456789012345678901234567890',
+        address: '',
+        size: '',
+        group: '',
+        indexNumber: '',
+        secretSalt: '',
     };
+    // const initialValues = {
+    //     address: '0xF029Bb7a9Cf6ee53239FF81B7DCd117479529F21',
+    //     size: 3,
+    //     group: 'Man',
+    //     indexNumber: 1,
+    //     secretSalt: '123456789012345678901234567890',
+    // };
 
     const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
@@ -220,9 +220,10 @@ export default function Result({ contractInfoList }) {
                 </Formik>
 
             
-                <div className={styles.logs}>{logs}</div>  
-                <div className={styles.logs}>{logs_err}</div>  
-
+                <div className={styles.container}>
+                    <div className={styles.log}>{logs}</div>  
+                    {renderError(logs_err)} 
+                </div>
             </main>
 
             <footer className={styles.footer}>        

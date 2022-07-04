@@ -113,7 +113,7 @@ export default function Start({ contractInfoList }) {
             return;
         }        
         setLogs(`Success!`); 
-        setLogs2(`Matching Event Address: ${eventAddress}`); 
+        setLogs2(`Share this Matching Event Address: ${eventAddress}`); 
     }
 
     return (
@@ -165,9 +165,9 @@ export default function Start({ contractInfoList }) {
         </Formik>
 
         <div classsName={styles.container}> 
-            <div className={styles.p}>{logs}</div>  
-            <div className={styles.p}>{logs2}</div>
-            <div className={styles.p}> {renderError(logs_err)} </div>
+            <div className={styles.log}>{logs}</div>  
+            <div className={styles.log}>{logs2}</div>
+            {renderError(logs_err)}
         </div>
         </main>
 

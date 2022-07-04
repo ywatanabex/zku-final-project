@@ -27,6 +27,7 @@ export async function getStaticProps() {
 
 export default function Submit({ contractInfoList }) {
     const [logs, setLogs] = React.useState("");
+    const [logs2, setLogs2] = React.useState("");
     const [logs_err, setLogs_err] = React.useState("");
 
     const validationSchema = Yup.object({
@@ -44,16 +45,16 @@ export default function Submit({ contractInfoList }) {
             name: 'min',
             message: "Secret Salt must be at least 30 digits",
             test: function (value) {
-                try { return BigInt(value) >= BigInt("1" + "0".repeat(30)) }   // 10^30 (exponent not supported)
+                try { return BigInt(value) >= BigInt("1" + "0".repeat(29)) }   // 10^30 (exponent not supported)
                 catch (eff) { return false }
             },            
         }).test({
             name: 'max',
             exclusive: false,
             params: { },
-            message: "Secret Salt must be less than 77 digits",  // less than circom modulo p
+            message: "Secret Salt must be less than or equal to 76 digits",  // less than circom modulo p
             test: function (value) {
-                try { return BigInt(value) < BigInt("1" + "0".repeat(77)) } 
+                try { return BigInt(value) < BigInt("1" + "0".repeat(76)) } 
                 catch (err) { return false }
             },            
         }), 
@@ -105,22 +106,22 @@ export default function Submit({ contractInfoList }) {
         }),  
     });
 
-    // const initialValues = {
-    //     address: '',
-    //     size: '',
-    //     group: '',
-    //     indexNumber: '',
-    //     secretSalt: '',
-    //     rankingNumberString: '',
-    // };
     const initialValues = {
-        address: '0xa65c187b9808D6A6ABE7e8a91e7AbBF6ee766B6B',
-        size: 3,
-        group: 'Man',
-        indexNumber: 1,
-        secretSalt: '123456789012345678901234567890123',
-        rankingNumberString: '1,3,2',
+        address: '',
+        size: '',
+        group: '',
+        indexNumber: '',
+        secretSalt: '',
+        rankingNumberString: '',
     };
+    // const initialValues = {
+    //     address: '0xa65c187b9808D6A6ABE7e8a91e7AbBF6ee766B6B',
+    //     size: 3,
+    //     group: 'Man',
+    //     indexNumber: 1,
+    //     secretSalt: '123456789012345678901234567890123',
+    //     rankingNumberString: '1,3,2',
+    // };
 
     const renderError = (message) => <p style={{color: "red"}}>{message}</p>;
 
@@ -203,7 +204,8 @@ export default function Submit({ contractInfoList }) {
             setLogs_err(`ERROR: failed to commit your data in the blockchain. err: ${err}`);
             return;
         }
-        setLogs(`Hash of your preference is commited in the blockchain. hash = ${sHash}`);
+        setLogs(`Hash of your preference is commited in the blockchain`);
+        setLogs2(`hash = ${sHash}`);
     }
 
     return (
@@ -323,8 +325,8 @@ export default function Submit({ contractInfoList }) {
             </Formik>
 
             <div classsName={styles.container}> 
-                <div className={styles.logs}>{logs}</div>  
-                <div className={styles.logs}>{logs_err}</div>  
+                <div className={styles.log}>{logs}</div>  
+                {renderError(logs_err)}  
             </div>
             </main>
 
